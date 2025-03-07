@@ -1,7 +1,4 @@
-import api.Order;
-import api.OrderApi;
-import api.User;
-import api.UserApi;
+import api.*;
 import com.github.javafaker.Faker;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Step;
@@ -32,12 +29,14 @@ public class ParametrizedCreateOrderTest {
 
     private String accessToken;
 
-    private static final String FLUORESCENT_BUN = "61c0c5a71d1f82001bdaaa6d";
-    private static final String BEEF_METEORITE = "61c0c5a71d1f82001bdaaa70";
-    private static final String INGREDIENT_MUST_BODY_RESPONSE = "{\"success\":false,\"message\":\"Ingredient ids must be provided\"}";
-
-    UserApi userApi = new UserApi();
     OrderApi orderApi = new OrderApi();
+    UserApi userApi = new UserApi();
+
+    static IngredientsApi ingredientApi = new IngredientsApi();
+    private static final String FLUORESCENT_BUN = ingredientApi.getIdIngredient("Флюоресцентная булка R2-D3");
+    private static final String BEEF_METEORITE = ingredientApi.getIdIngredient("Говяжий метеорит (отбивная)");
+
+    private static final String INGREDIENT_MUST_BODY_RESPONSE = "{\"success\":false,\"message\":\"Ingredient ids must be provided\"}";
 
     private final List<String> ingredientsList;
     private final int expectedStatusCode;
@@ -91,7 +90,6 @@ public class ParametrizedCreateOrderTest {
             checkedBodyResponse(response, expectedResponseBody, shouldAuthorization);
         }
     }
-
 
     @Step("Проверка статуса ответа")
     public void checkedStatusResponse(Response response, int code) {
