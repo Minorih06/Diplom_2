@@ -1,13 +1,12 @@
-import api.Order;
-import api.OrderApi;
-import api.User;
-import api.UserApi;
+import api.*;
 import com.github.javafaker.Faker;
 import io.qameta.allure.Description;
 import io.qameta.allure.Step;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import model.Order;
+import model.User;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
@@ -21,8 +20,8 @@ import java.util.List;
 import static api.ProjectURL.URL;
 import static org.apache.http.HttpStatus.SC_OK;
 import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
-import static org.hamcrest.CoreMatchers.equalTo;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertTrue;
 
 
@@ -34,9 +33,9 @@ public class ReceivingUserOrdersTest {
 
     private String accessToken;
 
-    private static final String FLUORESCENT_BUN = "61c0c5a71d1f82001bdaaa6d";
-    private static final String BEEF_METEORITE = "61c0c5a71d1f82001bdaaa70";
-    private static final String RECEIVING_ORDERS_UNAUTHORIZED_USER_RESPONSE_BODY = "{\"success\":false,\"message\":\"You should be authorised\"}";
+    IngredientsApi ingredientApi = new IngredientsApi();
+    private final String fluorescentBun = ingredientApi.getIdIngredient("Флюоресцентная булка R2-D3");
+    private final String beefMeteorite = ingredientApi.getIdIngredient("Говяжий метеорит (отбивная)");
 
     UserApi userApi = new UserApi();
     OrderApi orderApi = new OrderApi();
@@ -57,7 +56,7 @@ public class ReceivingUserOrdersTest {
         accessToken = userApi.getAccessToken(createUser);
         shouldDeleteUser = true;
 
-        Order order = new Order(Arrays.asList(FLUORESCENT_BUN, BEEF_METEORITE));
+        Order order = new Order(Arrays.asList(fluorescentBun, beefMeteorite));
         Response createOrder = orderApi.createOrder(order, accessToken);
         String idOrder = orderApi.getIdOrder(createOrder);
 
@@ -72,7 +71,7 @@ public class ReceivingUserOrdersTest {
     public void receivingOrdersUnauthorizedUserTest() {
         Response response = orderApi.receivingUserOrders(null);
         checkedStatusResponse(response, SC_UNAUTHORIZED);
-        checkedBodyResponse(response, RECEIVING_ORDERS_UNAUTHORIZED_USER_RESPONSE_BODY);
+        checkedBodyResponse(response, false, "You should be authorised");
     }
 
     @Step("Проверка статуса ответа")
@@ -96,8 +95,10 @@ public class ReceivingUserOrdersTest {
     }
 
     @Step("Проверка тела ответа")
-    public void checkedBodyResponse(Response response, String responseBody) {
-        response.then().body(equalTo(responseBody));
+    public void checkedBodyResponse(Response response, boolean successExpected, String messageExpected) {
+        response.then().assertThat()
+                .body("success", is(successExpected))
+                .body("message", is(messageExpected));
     }
 
 

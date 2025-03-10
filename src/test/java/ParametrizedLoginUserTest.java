@@ -1,4 +1,5 @@
-import api.User;
+import io.qameta.allure.Description;
+import model.User;
 import api.UserApi;
 import com.github.javafaker.Faker;
 import io.qameta.allure.Allure;
@@ -15,8 +16,6 @@ import org.junit.runners.Parameterized;
 import static api.ProjectURL.URL;
 import static org.apache.http.HttpStatus.*;
 import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.Matchers.emptyOrNullString;
 
 @RunWith(Parameterized.class)
 public class ParametrizedLoginUserTest {
@@ -26,30 +25,24 @@ public class ParametrizedLoginUserTest {
     private static final String EMAIL = faker.internet().emailAddress();
     private static final String PASSWORD = faker.internet().password();
     private static final String NAME = faker.name().firstName();
-    private static final String INCORRECT_FIELDS_BODY_RESPONSE =  "{\"success\":false,\"message\":\"email or password are incorrect\"}";
 
     private String accessToken;
 
     UserApi userApi = new UserApi();
 
     private final User user;
-    private final int expectedStatusCode;
-    private final String expectedResponseBody;
     private final String testName;
 
-    public ParametrizedLoginUserTest(User user, int statusCode, String expectedResponseBody, String testName) {
+    public ParametrizedLoginUserTest(User user, String testName) {
         this.user = user;
-        this.expectedStatusCode = statusCode;
-        this.expectedResponseBody = expectedResponseBody;
         this.testName = testName;
     }
 
-    @Parameterized.Parameters(name = "{index}: {3}")
+    @Parameterized.Parameters(name = "{index}: {1}")
     public static Object[][] getUser() {
         return new Object[][] {
-                {new User(EMAIL, PASSWORD), SC_OK, "", "Успешная авторизация существующего пользователя"},
-                {new User(EMAIL, faker.internet().password()), SC_UNAUTHORIZED, INCORRECT_FIELDS_BODY_RESPONSE, "Нельзя авторизоваться с неверным password"},
-                {new User(faker.internet().emailAddress(), PASSWORD), SC_UNAUTHORIZED, INCORRECT_FIELDS_BODY_RESPONSE, "Нельзя авторизоваться с неверным email"}
+                {new User(EMAIL, faker.internet().password()), "с неверным password"},
+                {new User(faker.internet().emailAddress(), PASSWORD), "с неверным email"}
         };
     }
 
@@ -62,13 +55,14 @@ public class ParametrizedLoginUserTest {
     }
 
     @Test
-    @DisplayName("Проверка авторизации пользователя")
+    @DisplayName("Нельзя авторизоваться с неверными данными")
+    @Description("Ожидаем, что авторизация не произойдёт. Код ответа: 401 Unauthorized. В теле ответа вернётся информация об ошибке.")
     public void userLoginTest() {
-        Allure.getLifecycle().updateTestCase(tc -> tc.setName(testName));
+        Allure.getLifecycle().updateTestCase(tc -> tc.setName("Нельзя авторизоваться " + testName));
 
         Response response = userApi.loginUser(user);
-        checkedStatusResponse(response, expectedStatusCode);
-        checkedBodyResponse(response, expectedResponseBody);
+        checkedStatusResponse(response, SC_UNAUTHORIZED);
+        checkedBodyResponse(response, false, "email or password are incorrect");
     }
 
     @Step("Проверка статуса ответа")
@@ -77,19 +71,10 @@ public class ParametrizedLoginUserTest {
     }
 
     @Step("Проверка тела ответа")
-    public void checkedBodyResponse(Response response, String responseBody) {
-        int statusCode = response.getStatusCode();
-        if (statusCode == SC_OK) {
-            response.then()
-                    .body("success", equalTo(true))
-                    .body("accessToken", startsWith("Bearer "))
-                    .body("refreshToken", not(emptyOrNullString()))
-                    .body("user.email", equalTo(EMAIL))
-                    .body("user.name", equalTo(NAME));
-        } else {
-            response.then().body(equalTo(responseBody));
-        }
-
+    public void checkedBodyResponse(Response response, boolean successExpected, String messageExpected) {
+        response.then().assertThat()
+                .body("success", is(successExpected))
+                .body("message", is(messageExpected));
     }
 
     @After

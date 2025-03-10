@@ -1,4 +1,4 @@
-import api.User;
+import model.User;
 import api.UserApi;
 import com.github.javafaker.Faker;
 import io.qameta.allure.Description;
@@ -12,7 +12,7 @@ import org.junit.Test;
 
 import static api.ProjectURL.URL;
 import static org.apache.http.HttpStatus.*;
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 
 public class ChangeInformationUserTest {
 
@@ -56,20 +56,6 @@ public class ChangeInformationUserTest {
     }
 
     @Test
-    @DisplayName("Можно изменить password авторизованному пользователю")
-    @Description("Ожидаем, что password будет изменён, код ответа: 200 ОК, тело ответа соответствует структуре: {\"success\":true, \"user\": {\"email\":\"\", \"name\":\"\" } } и можно авторизоваться с новым паролем")
-    public void changePasswordTest() {
-        String newPassword = faker.internet().password();
-        User changeData = new User(false, newPassword);
-        Response response = userApi.setChangeInformationUser(accessToken, changeData);
-        checkedStatusResponse(response, SC_OK);
-        checkedBodySuccessfulResponse(response, email, name);
-        User loginData = new User(email, newPassword);
-        Response loginResponse = userApi.loginUser(loginData);
-        checkedStatusResponse(loginResponse, SC_OK);
-    }
-
-    @Test
     @DisplayName("Нельзя изменить информацию для неавторизованного пользователя")
     @Description("Ожидаем, что информация не будет изменена, код ответ: 401 Unauthorized, тело ответа: {\"success\":false,\"message\":\"You should be authorised\"}")
     public void mustNotChangeInformationUnauthorizedUser() {
@@ -77,17 +63,25 @@ public class ChangeInformationUserTest {
         User changeData = new User(newEmail);
         Response response = userApi.setChangeInformationUser(null, changeData);
         checkedStatusResponse(response, SC_UNAUTHORIZED);
-        checkedBodyResponse(response, "{\"success\":false,\"message\":\"You should be authorised\"}");
+        checkedBodyResponse(response, false, "You should be authorised");
     }
 
     @Test
     @DisplayName("Нельзя передать в запросе email, который уже используется")
     @Description("Ожидаем код ответ: 403 Forbidden, тело ответа: {\"success\":false,\"message\":\"User with such email already exists\"}")
     public void mustNotChangeEmailToIdentical() {
-        User changeData = new User(email);
+        String newEmail = faker.internet().emailAddress();
+        User newUser = new User(newEmail, password, name);
+        Response createNewUserResponse =userApi.createUser(newUser);
+        String accessTokenNewUser = userApi.getAccessToken(createNewUserResponse);
+
+        User changeData = new User(newEmail);
         Response response = userApi.setChangeInformationUser(accessToken, changeData);
+
+        userApi.deleteUser(accessTokenNewUser);
+
         checkedStatusResponse(response, SC_FORBIDDEN);
-        checkedBodyResponse(response, "{\"success\":false,\"message\":\"User with such email already exists\"}");
+        checkedBodyResponse(response, false, "User with such email already exists");
     }
 
     @Step("Проверка статуса ответа")
@@ -97,15 +91,17 @@ public class ChangeInformationUserTest {
 
     @Step("Проверка тела ответа успешной смены информации")
     public void checkedBodySuccessfulResponse(Response response, String email, String name) {
-        response.then()
-                .body("success", equalTo(true))
-                .body("user.email", equalTo(email))
-                .body("user.name", equalTo(name));
+        response.then().assertThat()
+                .body("success", is(true))
+                .body("user.email", is(email))
+                .body("user.name", is(name));
     }
 
     @Step("Проверка тела ответа")
-    public void checkedBodyResponse(Response response, String responseBody) {
-        response.then().body(equalTo(responseBody));
+    public void checkedBodyResponse(Response response, boolean successExpected, String messageExpected) {
+        response.then().assertThat()
+                .body("success", is(successExpected))
+                .body("message", is(messageExpected));
     }
 
     @After

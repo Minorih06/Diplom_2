@@ -1,28 +1,29 @@
 package api;
 
+import constants.Endpoints;
 import io.qameta.allure.Step;
 import io.restassured.response.Response;
+import model.Order;
 
 import static io.restassured.RestAssured.given;
 
 public class OrderApi {
-    private static final String ORDERS_REQUEST = "/api/orders";
 
     @Step("Создание заказа")
     public Response createOrder(Order order, String accessToken) {
         if (accessToken != null) {
-            return given().header("Authorization", accessToken).header("Content-type", "application/json").and().body(order).when().post(ORDERS_REQUEST);
+            return given().header("Authorization", accessToken).header("Content-type", "application/json").and().body(order).when().post(Endpoints.ORDERS_REQUEST.toString());
         } else {
-            return given().header("Content-type", "application/json").and().body(order).when().post(ORDERS_REQUEST);
+            return given().header("Content-type", "application/json").and().body(order).when().post(Endpoints.ORDERS_REQUEST.toString());
         }
     }
 
     @Step("Получение заказов конкретного пользователя")
     public Response receivingUserOrders(String accessToken) {
         if (accessToken != null) {
-            return given().header("Authorization", accessToken).header("Content-type", "application/json").get(ORDERS_REQUEST);
+            return given().header("Authorization", accessToken).header("Content-type", "application/json").get(Endpoints.ORDERS_REQUEST.toString());
         } else {
-            return given().header("Content-type", "application/json").get(ORDERS_REQUEST);
+            return given().header("Content-type", "application/json").get(Endpoints.ORDERS_REQUEST.toString());
         }
     }
 
