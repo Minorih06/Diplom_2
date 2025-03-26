@@ -12,12 +12,12 @@ public class UserApi {
 
     @Step("Создание пользователя")
     public Response createUser(User user) {
-        return given().header("Content-type", "application/json").and().body(user).when().post(Endpoints.CREATE_USER_REQUEST.toString());
+        return given().header("Content-type", "application/json").and().body(user).when().post(Endpoints.CREATE_USER_REQUEST.getUrl());
     }
 
     @Step("Авторизация пользователя")
     public Response loginUser(User user) {
-        return given().header("Content-type", "application/json").and().body(user).when().post(Endpoints.LOGIN_USER_REQUEST.toString());
+        return given().header("Content-type", "application/json").and().body(user).when().post(Endpoints.LOGIN_USER_REQUEST.getUrl());
     }
 
     @Step("Получение accessToken")
@@ -27,15 +27,16 @@ public class UserApi {
 
     @Step("Удаление пользователя")
     public void deleteUser(String accessToken) {
-        given().header("Authorization", accessToken).header("Content-type", "application/json").delete(Endpoints.DELETE_USER_REQUEST.toString()).then().statusCode(SC_ACCEPTED);
+        given().header("Authorization", accessToken).header("Content-type", "application/json").delete(Endpoints.DELETE_USER_REQUEST.getUrl()).then().statusCode(SC_ACCEPTED);
     }
 
-    @Step("Изменение информации пользователя")
+    @Step("Изменение информации авторизованного пользователя")
     public Response setChangeInformationUser(String accessToken, User changeDataUser) {
-        if (accessToken != null) {
-            return given().header("Authorization", accessToken).header("Content-type", "application/json").and().body(changeDataUser).patch(Endpoints.CHANGE_INFORMATION_USER_REQUEST.toString());
-        } else {
-            return given().header("Content-type", "application/json").and().body(changeDataUser).patch(Endpoints.CHANGE_INFORMATION_USER_REQUEST.toString());
-        }
+        return given().header("Authorization", accessToken).header("Content-type", "application/json").and().body(changeDataUser).patch(Endpoints.CHANGE_INFORMATION_USER_REQUEST.getUrl());
+    }
+
+    @Step("Изменение информации неавторизованного пользователя")
+    public Response setChangeInformationUser(User changeDataUser) {
+        return given().header("Content-type", "application/json").and().body(changeDataUser).patch(Endpoints.CHANGE_INFORMATION_USER_REQUEST.getUrl());
     }
 }
