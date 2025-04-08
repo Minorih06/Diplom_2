@@ -1,6 +1,12 @@
 # Тестирование API приложения Stellar Burgers
 Данный проект написан на языке `Java 11` для тестирования ручек API приложения [Stellar Burgers](https://stellarburgers.nomoreparties.site/)
 
+## Содержание
+- [Задача](#задача)
+- [Используемые библиотеки](#используемые-библиотеки)
+- [Запуск тестов](#запуск-тестов)
+- [Отчёт о выполнении тестов](#отчёт-о-выполнении-тестов)
+
 ## Задача 
 [Документация API](https://code.s3.yandex.net/qa-automation-engineer/java/cheatsheets/paid-track/diplom/api-documentation.pdf)  
 
